@@ -1,0 +1,11 @@
+{
+    "route": {
+        "ram": 128,
+        "modules": ["profile/advanced", "gnu/4.9.2", "cmake/3.3.2--bin386",
+            "cuda/7.5.18", "cudnn/5.1--cuda--7.5.18"],
+        "cores": 16,
+        "max_walltime": "24:00:00",
+        "gpus": 2,
+        "nodes": 516
+    }
+}
