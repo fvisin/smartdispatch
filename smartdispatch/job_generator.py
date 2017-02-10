@@ -192,7 +192,7 @@ class CinecaJobGenerator(JobGenerator):
             nodes = nodes.replace('ppn', 'ncpus').replace('gpus', 'ngpus')
             nodes += ':mpiprocs=' + re.search('[.]*([0-9]+):[n][c][p][u][s]',
                                               nodes).group(1)
-            nodes += ':mem=17GB'
+            nodes += ':mem=' + os.getenv('SMARTDISPATCH_RAM', '17GB')
             pbs.resources['select'] = nodes
 
         # Add option to join output and error together
