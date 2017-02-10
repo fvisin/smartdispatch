@@ -29,7 +29,7 @@ TIMEOUT_EXIT_CODE = 124
 AUTORESUME_TRIGGER_AFTER = '$(($PBS_WALLTIME - 60))'  # By default, 60s before the maximum walltime.
 AUTORESUME_WORKER_CALL_PREFIX = 'timeout -s TERM {trigger_after} '.format(trigger_after=AUTORESUME_TRIGGER_AFTER)
 AUTORESUME_WORKER_CALL_SUFFIX = ' WORKER_PIDS+=" $!"'
-AUTORESUME_PROLOG = 'WORKER_PIDS=""' 
+AUTORESUME_PROLOG = 'WORKER_PIDS=""'
 AUTORESUME_EPILOG = """\
 NEED_TO_RESUME=false
 for WORKER_PID in $WORKER_PIDS; do
@@ -137,13 +137,19 @@ def main():
         worker_call_prefix = AUTORESUME_WORKER_CALL_PREFIX
         worker_call_suffix = AUTORESUME_WORKER_CALL_SUFFIX
 
-    COMMAND_STRING = 'cd "{cwd}"; {worker_call_prefix}python2 {worker_script} {worker_script_flags} "{commands_file}" "{log_folder}" '\
+    COMMAND_STRING = 'cd "{cwd}"; {setup} {worker_call_prefix}python2 {worker_script} {worker_script_flags} "{commands_file}" "{log_folder}" '\
                      '1>> "{log_folder}/worker/$PBS_JOBID\"\"_worker_{{ID}}.o" '\
                      '2>> "{log_folder}/worker/$PBS_JOBID\"\"_worker_{{ID}}.e" &'\
                      '{worker_call_suffix}'
-    COMMAND_STRING = COMMAND_STRING.format(cwd=os.getcwd(), worker_call_prefix=worker_call_prefix, worker_script=worker_script,
-                                           worker_script_flags=worker_script_flags, commands_file=command_manager._commands_filename,
-                                           log_folder=path_job_logs, worker_call_suffix=worker_call_suffix)
+    COMMAND_STRING = COMMAND_STRING.format(
+        cwd=os.getcwd(),
+        setup=os.getenv('SMARTDISPATCH_SETUP_COMMANDS'),
+        worker_call_prefix=worker_call_prefix,
+        worker_script=worker_script,
+        worker_script_flags=worker_script_flags,
+        commands_file=command_manager._commands_filename,
+        log_folder=path_job_logs,
+        worker_call_suffix=worker_call_suffix)
     commands = [COMMAND_STRING.format(ID=i) for i in range(args.pool)]
 
     # TODO: use args.memPerNode instead of args.memPerNode
@@ -167,12 +173,12 @@ def main():
         epilog = [AUTORESUME_EPILOG.format(launcher=LAUNCHER if args.launcher is None else args.launcher, path_job=path_job)]
 
     job_generator = job_generator_factory(queue, commands, prolog, epilog, command_params, CLUSTER_NAME, path_job)
-    
+
     # generating default names per each jobs in each batch
     for pbs_id, pbs in enumerate(job_generator.pbs_list):
         proper_size_name = utils.jobname_generator(jobname, pbs_id)
         pbs.add_options(N=proper_size_name)
-    
+
     if args.pbsFlags is not None:
         job_generator.add_pbs_flags(args.pbsFlags.split(' '))
     pbs_filenames = job_generator.write_pbs_files(path_job_commands)
