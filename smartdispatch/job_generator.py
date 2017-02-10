@@ -195,8 +195,11 @@ class CinecaJobGenerator(JobGenerator):
             nodes += ':mem=' + os.getenv('SMARTDISPATCH_RAM', '17GB')
             pbs.resources['select'] = nodes
 
-        # Add option to join output and error together
         for pbs in self.pbs_list:
+            # Add option to join output and error together
             pbs.options['-j'] = 'eo'
-            pbs.options['-M'] = os.getenv('SMARTDISPATCH_EMAIL', '')
-            pbs.options['-m'] = 'ae'  # bae
+            # Send email when job ends
+            email = os.getenv('SMARTDISPATCH_EMAIL', '')
+            if email != '':
+                pbs.options['-M'] = email
+                pbs.options['-m'] = 'e'  # bae
