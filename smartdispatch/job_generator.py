@@ -15,6 +15,8 @@ def job_generator_factory(queue, commands, prolog=[], epilog=[], command_params=
         return HeliosJobGenerator(queue, commands, prolog, epilog, command_params, base_path)
     elif cluster_name == "hades":
         return HadesJobGenerator(queue, commands, prolog, epilog, command_params, base_path)
+    elif cluster_name == "cineca":
+        return CinecaJobGenerator(queue, commands, prolog, epilog, command_params, base_path)
 
     return JobGenerator(queue, commands, prolog, epilog, command_params, base_path)
 
@@ -171,3 +173,30 @@ class HeliosJobGenerator(JobGenerator):
         for pbs in self.pbs_list:
             # Remove forbidden ppn option. Default is 2 cores per gpu.
             pbs.resources['nodes'] = re.sub(":ppn=[0-9]+", "", pbs.resources['nodes'])
+
+
+
+class CinecaJobGenerator(JobGenerator):
+
+    def _add_cluster_specific_rules(self):
+        self.specify_account_name_from_env('WORK')
+
+        # Use custom names for Cineca:
+        # * nodes --> select
+        # * ppn --> ncpus
+        # * gpus --> ngpus
+        # * mpiprocs == ncpus
+        for pbs in self.pbs_list:
+            nodes = pbs.resources['nodes']
+            del pbs.resources['nodes']
+            nodes = nodes.replace('ppn', 'ncpus').replace('gpus', 'ngpus')
+            nodes += ':mpiprocs=' + re.search('[.]*([0-9]+):[n][c][p][u][s]',
+                                              nodes).group(1)
+            nodes += ':mem=17GB'
+            pbs.resources['select'] = nodes
+
+        # Add option to join output and error together
+        for pbs in self.pbs_list:
+            pbs.options['-j'] = 'eo'
+            pbs.options['-M'] = os.getenv('SMARTDISPATCH_EMAIL', '')
+            pbs.options['-m'] = 'ae'  # bae

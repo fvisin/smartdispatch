@@ -17,7 +17,7 @@ def jobname_generator(jobname, job_id):
     Returns
     -------
     str
-    The cropped version of the string.  
+    The cropped version of the string.
     '''
     # 64 - 1 since the total length including -1 should be less than 64
     job_id = str(job_id)
@@ -128,6 +128,8 @@ def detect_cluster():
         cluster_name = "helios"
     elif server_name.split('.')[-1] == 'hades':
         cluster_name = "hades"
+    elif server_name.split('.')[-1] == 'io01':
+        cluster_name = "cineca"
     return cluster_name
 
 
